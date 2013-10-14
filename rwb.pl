@@ -399,11 +399,7 @@ if ($action eq "getCycles") {
 
   my ($str,$error) = GetCycles();
   if (!$error) {
-    if ($format eq "table") { 
-      print "<h2>Nearby committees</h2>$str";
-    } else {
-      print $str;
-    }
+    print $str;  
   }
 }
 
@@ -753,16 +749,10 @@ sub GetCycles {
     @rows = ExecSQL($dbuser, $dbpassword, "select distinct cycle from css339.candidate_master");
   };
 
-  if ($@) {
-    return (undef, $@);
-  } else {
-    if ($format eq "table") {
-      return (MakeTable("cycle_list", "2D", 
-      ["cycle"], @rows), $@);
-    } else {
-      return (MakeRaw("cycle_list", "2D", @rows) , $@);
-    }
-  }
+
+
+  return (MakeTable("cycle_list", "2D", ["cycle"], @rows), $@);
+
 }
 
 
