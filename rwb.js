@@ -89,6 +89,8 @@ function ViewShift()
 
     color.innerHTML="<b><blink>Querying...("+ne.lat()+","+ne.lng()+") to ("+sw.lat()+","+sw.lng()+")</blink></b>";
     color.style.backgroundColor='white';
+
+    //var what = "&what"
    
     // debug status flows through by cookie
     $.get("rwb.pl?act=near&latne="+ne.lat()+"&longne="+ne.lng()+"&latsw="+sw.lat()+"&longsw="+sw.lng()+"&format=raw&what=committees,candidates,individuals", NewData);
@@ -98,7 +100,6 @@ function getCycles()
 {
   console.log($.get("rwb.pl?act=getCycles"));
 }
-
 
 function Reposition(pos)
 {
