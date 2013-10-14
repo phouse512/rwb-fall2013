@@ -392,6 +392,22 @@ if ($action eq "base") {
 
 }
 
+if ($action eq "getCycles") {
+  my $cycle = param("cycle");
+
+  $cycle = "1112" if !defined($cycle);
+
+  my ($str,$error) = Committees($latne,$longne,$latsw,$longsw,$cycle,$format);
+  if (!$error) {
+    if ($format eq "table") { 
+      print "<h2>Nearby committees</h2>$str";
+    } else {
+      print $str;
+    }
+    }
+  }
+}
+
 #
 #
 # NEAR
@@ -725,6 +741,27 @@ sub Committees {
 			@rows),$@);
     } else {
       return (MakeRaw("committee_data","2D",@rows),$@);
+    }
+  }
+}
+
+#
+#
+#
+sub GetCycles {
+  my @rows;
+  eval {
+    @rows = ExecSQL($dbuser, $dbpassword, "select distinct cycle from css339.candidate_master");
+  };
+
+  if ($@) {
+    return (undef, $@);
+  } else {
+    if ($format eq "table") {
+      return (MakeTable("cycle_list", "2D", 
+      ["cycle"], @rows), $@);
+    } else {
+      return (MakeRaw("cycle_list", "2D", @rows) , $@);
     }
   }
 }
