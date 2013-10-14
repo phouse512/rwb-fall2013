@@ -392,16 +392,16 @@ if ($action eq "base") {
 
 }
 
-if ($action eq "getCycles") {
-  my $cycle = param("cycle");
+#if ($action eq "getCycles") {
+#  my $cycle = param("cycle");
 
-  $cycle = "1112" if !defined($cycle);
+ # $cycle = "1112" if !defined($cycle);
 
-  my ($str,$error) = GetCycles();
-  if (!$error) {
-    print $str;  
-  }
-}
+ # my ($str,$error) = GetCycles();
+ # if (!$error) {
+ #   print $str;  
+ # }
+#}
 
 #
 #
@@ -743,17 +743,17 @@ sub Committees {
 #
 #
 #
-sub GetCycles {
-  my @rows;
-  eval {
-    @rows = ExecSQL($dbuser, $dbpassword, "select distinct cycle from css339.candidate_master");
-  };
+#sub GetCycles {
+#  my @rows;
+ # eval {
+  #  @rows = ExecSQL($dbuser, $dbpassword, "select distinct cycle from css339.candidate_master");
+ # };
 
 
 
-  return (MakeTable("cycle_list", "2D", ["cycle"], @rows), $@);
+ # return (MakeTable("cycle_list", "2D", ["cycle"], @rows), $@);
 
-}
+#}
 
 
 #
