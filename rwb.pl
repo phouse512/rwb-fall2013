@@ -397,13 +397,12 @@ if ($action eq "getCycles") {
 
   $cycle = "1112" if !defined($cycle);
 
-  my ($str,$error) = Committees($latne,$longne,$latsw,$longsw,$cycle,$format);
+  my ($str,$error) = GetCycles();
   if (!$error) {
     if ($format eq "table") { 
       print "<h2>Nearby committees</h2>$str";
     } else {
       print $str;
-    }
     }
   }
 }
