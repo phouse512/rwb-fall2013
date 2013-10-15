@@ -338,13 +338,13 @@ if ($action eq "base") {
   # And something to color (Red, White, or Blue)
   #
   print "<div id=\"color\" style=\"width:100\%; height:10\%\"></div>";
-  print "<div id=\"choose\" style=\"width:100\%; height:20\%\"><input type=\"checkbox\" class=\"what\" val=\"committees\">Committes</input><input type=\"checkbox\" class=\"what\" val=\"candidates\">Candidates</input><input type=\"checkbox\" class=\"what\" val=\"individuals\">Individuals</input></div>";
+  print "<div id=\"choose\" style=\"width:100\%; height:5\%\"><input type=\"checkbox\" id=\"committees\" class=\"what\" val=\"committees\" checked>Committes</input><input type=\"checkbox\" id=\"candidates\"  class=\"what\" val=\"candidates\">Candidates</input><input type=\"checkbox\" id=\"individuals\" class=\"what\" val=\"individuals\">Individuals</input></div>";
 
   #
   #
   # And a map which will be populated later
   #
-  print "<div id=\"map\" style=\"width:100\%; height:80\%\"></div>";
+  print "<div id=\"map\" style=\"width:100\%; height:70\%\"></div>";
   
   
   #
@@ -505,7 +505,7 @@ if ($action eq "invite-user") {
       my $name=param('name');
       my $email=param('email');
       my $subject="Welcome to RWB!";
-      my $content="hihihi";
+      my $content="murphy.wot.eecs.northwestern.edu/~eli976/rwb/rwb.pl?act=validate&email=$email";
       open(MAIL,"| mail -s $subject $email") or die "Can't send invite\n";
       print MAIL $content;
       close(MAIL);
@@ -514,6 +514,48 @@ if ($action eq "invite-user") {
   }
   print "<p><a href=\"rwb.pl?act=base&run=1\">Return</a></p>";
 }
+
+
+#
+#
+#
+#create an account from invite
+#
+if ($action eq "validate") { 
+      if (!$run) { 
+      print start_form(-name=>'CreateAccount'),
+  h2('Create your account!'),
+    "Name: ", textfield(-name=>'name'),
+      p,
+        "Password: ", textfield(-name=>'password'),
+    p,
+      hidden(-name=>'run',-default=>['1']),
+      hidden(-name=>'act',-default=>['validate']),
+        submit,
+          end_form,
+            hr;
+    } else {
+
+      my $q = new CGI;
+      my $a = $q->param('email');
+
+      my $name=param('name');
+      my $password=param('password');
+      my $test="me";
+      my $error;
+      $error=UserAdd($name,$password, $a ,$test);
+      if ($error) { 
+  print "Can't add user because: $error";
+      } else {
+  print "Your account has been created!\n";
+      }
+
+    }
+  
+  print "<p><a href=\"rwb.pl?act=base&run=1\">Return</a></p>";
+}
+
+
 
 #
 #

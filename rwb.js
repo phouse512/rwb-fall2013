@@ -52,10 +52,16 @@ function UpdateMap()
 
     ClearMarkers();
 
-    UpdateMapById("committee_data","COMMITTEE");
-    UpdateMapById("candidate_data","CANDIDATE");
-    UpdateMapById("individual_data", "INDIVIDUAL");
-    UpdateMapById("opinion_data","OPINION");
+    if($("#committees").attr("checked")) {
+	UpdateMapById("committee_data","COMMITTEE");
+    }
+    if($("#candidates").attr("checked")) {
+	 UpdateMapById("candidate_data","CANDIDATE");
+    }
+    if($("#individuals").attr("checked")) {    
+	UpdateMapById("individual_data", "INDIVIDUAL");
+   }    
+//UpdateMapById("opinion_data","OPINION");
 
 
     color.innerHTML="Ready";
@@ -90,15 +96,33 @@ function ViewShift()
     color.innerHTML="<b><blink>Querying...("+ne.lat()+","+ne.lng()+") to ("+sw.lat()+","+sw.lng()+")</blink></b>";
     color.style.backgroundColor='white';
 
-    //var what = "&what"
+    var checked = new Array();
+    $(".what:checked").each(function() {
+   	checked.push($(this).attr("val"));
+    });
    
+    var formatString = "&what=";
+
+    for(var i=0; i<checked.length; i++){
+	formatString += checked[i];
+	if (i != (checked.length-1)){
+	    formatString += ",";
+	}
+    }   
+
+    console.log(formatString);
+ 
     // debug status flows through by cookie
-    $.get("rwb.pl?act=near&latne="+ne.lat()+"&longne="+ne.lng()+"&latsw="+sw.lat()+"&longsw="+sw.lng()+"&format=raw&what=committees,candidates,individuals", NewData);
+    $.get("rwb.pl?act=near&latne="+ne.lat()+"&longne="+ne.lng()+"&latsw="+sw.lat()+"&longsw="+sw.lng()+"&format=raw" + formatString, NewData);
 }
 
 function getCycles()
 {
-  console.log($.get("rwb.pl?act=getCycles"));
+  $.get("rwb.pl?act=getCycles", displayCycles);
+}
+
+function displayCycles(data) {
+    console.log(data);
 }
 
 function Reposition(pos)

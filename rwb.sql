@@ -18,6 +18,19 @@
 --
 
 
+--one time use email tracking
+--
+create table validate (
+  key varchar(64) not null primary key,
+
+  active varchar(10) 
+);
+
+
+
+
+
+
 --
 -- RWB users.  Self explanatory
 --
