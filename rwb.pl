@@ -338,7 +338,7 @@ if ($action eq "base") {
   # And something to color (Red, White, or Blue)
   #
   print "<div id=\"color\" style=\"width:100\%; height:10\%\"></div>";
-  print "<div id=\"choose\" style=\"width:100\%; height:20\%\"><input type=\"checkbox\" class=\"what\" val=\"committees\">Committes</input><input type=\"checkbox\" class=\"what\" val=\"candidates\">Candidates</input></div>";
+  print "<div id=\"choose\" style=\"width:100\%; height:20\%\"><input type=\"checkbox\" class=\"what\" val=\"committees\">Committes</input><input type=\"checkbox\" class=\"what\" val=\"candidates\">Candidates</input><input type=\"checkbox\" class=\"what\" val=\"individuals\">Individuals</input></div>";
 
   #
   #
@@ -486,11 +486,70 @@ if ($action eq "near") {
 
 
 if ($action eq "invite-user") { 
-  print h2("Invite User Functionality Is Unimplemented");
+  if (!UserCan($user,"invite-user") && !UserCan($user,"manage-users")) { 
+    print h2('You do not have the required permissions to invite users.');
+  } else {
+    if (!$run) { 
+      print start_form(-name=>'InviteUser'),
+  h2('Invite User'),
+    "Name: ", textfield(-name=>'name'),
+      p,
+        "Email: ", textfield(-name=>'email'),
+    p,
+      hidden(-name=>'run',-default=>['1']),
+      hidden(-name=>'act',-default=>['invite-user']),
+        submit,
+          end_form,
+            hr;
+    } else {
+      my $name=param('name');
+      my $email=param('email');
+      my $subject="Welcome to RWB!";
+      my $content="hihihi";
+      open(MAIL,"| mail -s $subject $email") or die "Can't send invite\n";
+      print MAIL $content;
+      close(MAIL);
+      print "Invite sent!\n";
+    }
+  }
+  print "<p><a href=\"rwb.pl?act=base&run=1\">Return</a></p>";
 }
 
+#
+#
+#
+#give opinions
+#
+#
 if ($action eq "give-opinion-data") { 
-  print h2("Giving Location Opinion Data Is Unimplemented");
+  if (!UserCan($user,"give-opinion-data")) { 
+    print h2('You do not have the required permissions to give opinions.');
+  } else {
+    if (!$run) { 
+      print start_form(-name=>'GiveOpinions'),
+  h2('Give Opinions'),
+    "Color (must be between -1 and 1): ", textfield(-name=>'color'),
+      p,
+       
+          hidden(-name=>'run',-default=>['1']),
+      hidden(-name=>'act',-default=>['give-opinion-data']),
+        submit,
+          end_form,
+            hr;
+    } else {
+      my $color=param('color');
+      my $error;
+      $error=GiveOpinions($user,$color,$color,$color);
+
+      if ($error) { 
+  print "Can't give opinion because: $error";
+      } else {
+  print "Added opinion!\n";
+      }
+      
+    }
+  }
+  print "<p><a href=\"rwb.pl?act=base&run=1\">Return</a></p>";
 }
 
 if ($action eq "give-cs-ind-data") { 
@@ -715,6 +774,20 @@ print end_html;
 # The remainder includes utilty and other functions
 #
 
+
+#
+# Give opinions
+# call with color
+#
+# returns false on success, error string on failure.
+# 
+# 
+#
+sub GiveOpinions { 
+  eval { ExecSQL($dbuser,$dbpasswd,
+     "insert into rwb_opinions (submitter,color,latitude,longitude) values (?,?,?,?)",undef,@_);};
+  return $@;
+}
 
 #
 # Generate a table of nearby committees

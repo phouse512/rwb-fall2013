@@ -55,7 +55,7 @@ function UpdateMap()
     UpdateMapById("committee_data","COMMITTEE");
     UpdateMapById("candidate_data","CANDIDATE");
     UpdateMapById("individual_data", "INDIVIDUAL");
-   // UpdateMapById("opinion_data","OPINION");
+    UpdateMapById("opinion_data","OPINION");
 
 
     color.innerHTML="Ready";
