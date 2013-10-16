@@ -119,8 +119,10 @@ my $logincomplain=0;
 #
 my $action;
 my $run;
+my $key;
 
- 
+if (defined(param("key"))) { 
+  $key=param("key");} 
 
 if (defined(param("act"))) { 
   $action=param("act");
@@ -331,6 +333,7 @@ if ($action eq "base") {
   # The Javascript portion of our app
   #
   print "<script type=\"text/javascript\" src=\"rwb.js\"> </script>";
+  print "<script type=\"text/javascript\">\$(document).ready(function () {  getCycles(); });</script>";
 
 
 
@@ -433,6 +436,13 @@ if ($action eq "near") {
   $format = "table" if !defined($format);
   $cycle = "1112" if !defined($cycle);
 
+  if (!defined($cycle)) {
+    $cycle = "1112"; 
+  } else {
+    my @cycle_array = split(',', $cycle);
+
+  }
+
   if (!defined($whatparam) || $whatparam eq "all") { 
     %what = ( committees => 1, 
 	      candidates => 1,
@@ -485,7 +495,12 @@ if ($action eq "near") {
   }
 }
 
-
+#
+#
+#
+#
+#invite users
+#
 if ($action eq "invite-user") { 
   if (!UserCan($user,"invite-user") && !UserCan($user,"manage-users")) { 
     print h2('You do not have the required permissions to invite users.');
@@ -503,15 +518,27 @@ if ($action eq "invite-user") {
     } else {
       my $name=param('name');
 
-      my $key="5";
+      my $newkey=int(rand(10000));
 
       my $email=param('email');
       my $subject="Welcome to RWB!";
-      my $content="murphy.wot.eecs.northwestern.edu/~eli976/rwb/rwb.pl?act=validate&email=$email&ref=$user&key=$key";
+      my $content="murphy.wot.eecs.northwestern.edu/~eli976/rwb/rwb.pl?act=validate&email=$email&ref=$user&key=$newkey";
+      
+      if (!ValidKey($newkey)) {
       open(MAIL,"| mail -s $subject $email") or die "Can't send invite\n";
       print MAIL $content;
       close(MAIL);
       print "Invite sent!\n";
+      #MORE ROBUST ERROR CATCHING?
+      insertValidate($email,$newkey, 1) or die "Can't send invite\n";
+      }
+
+      else{
+        print "error\n";
+      }
+
+
+
     }
   }
   print "<p><a href=\"rwb.pl?act=base&run=1\">Return</a></p>";
@@ -524,38 +551,76 @@ if ($action eq "invite-user") {
 #create an account from invite
 #
 if ($action eq "validate") { 
-      if (!$run) { 
-      print start_form(-name=>'CreateAccount'),
-  h2('Create your account!'),
-    "Name: ", textfield(-name=>'name'),
-      p,
-        "Password: ", textfield(-name=>'password'),
-    p,
-      hidden(-name=>'run',-default=>['1']),
-      hidden(-name=>'email',-default=>['1']),
-       hidden(-name=>'key',-default=>['1']),
-        hidden(-name=>'ref',-default=>['1']),
+      if(!ValidLink($key)) {
+        print start_form(-name=>'Sorry'),
+        h2('Sorry!'),
+          "Your invite link has already been used once! Ask your referrer for another one or continue as anonymous user!",
       
-      hidden(-name=>'act',-default=>['validate']),
-        submit,
           end_form,
             hr;
-    } else {
-
-      my $invited_email = param('email');
-      my $key = param('key');
-      my $name=param('name');
-      my $password=param('password');
-      my $referrer=param('ref');
-      my $error;
-      $error=UserAdd($name,$password, $invited_email ,$referrer);
-      if ($error) { 
-  print "Can't add user because: $error";
-      } else {
-  print "Your account has been created!\n";
       }
+      
+      else{
+        if (!$run) { 
+          print start_form(-name=>'CreateAccount'),
+          h2('Create your account!'),
+          "Name: ", textfield(-name=>'name'),
+          p,
+          "Password: ", textfield(-name=>'password'),
+          p,
+          hidden(-name=>'run',-default=>['1']),
+          hidden(-name=>'email',-default=>['1']),
+          hidden(-name=>'key',-default=>['1']),
+          hidden(-name=>'ref',-default=>['1']),
+          
+          hidden(-name=>'act',-default=>['validate']),
+            submit,
+              end_form,
+                hr;
+        } else {
+          OffLink($key);
 
-    }
+          my $invited_email = param('email');
+          $key = param('key');
+          my $name=param('name');
+          my $password=param('password');
+          my $referrer=param('ref');
+          my $error;
+          $error=UserAdd($name,$password, $invited_email ,$referrer);
+          if ($error) { 
+            print "Can't add user because: $error";
+          } else {
+            print "Your account has been created!\n";
+          }
+
+          if(CheckUserPerm($referrer, "invite-users")){
+            GiveUserPerm($name, "invite-users");
+          }
+          if(CheckUserPerm($referrer, "add-users")){
+            GiveUserPerm($name, "add-users");
+          }
+          if(CheckUserPerm($referrer, "query-fec-data")){
+            GiveUserPerm($name, "query-fec-data");
+          }
+          if(CheckUserPerm($referrer, "query-cs-ind-data")){
+            GiveUserPerm($name, "query-cs-ind-data");
+          }
+          if(CheckUserPerm($referrer, "query-opinion-data")){
+            GiveUserPerm($name, "query-opinion-data");
+          }
+          if(CheckUserPerm($referrer, "give-cs-ind-data")){
+            GiveUserPerm($name, "give-cs-ind-data");
+          }
+          if(CheckUserPerm($referrer, "give-opinion-data")){
+            GiveUserPerm($name, "give-opinion-data");
+          }
+
+
+
+
+
+        }
+      }
   
   print "<p><a href=\"rwb.pl?act=base&run=1\">Return</a></p>";
 }
@@ -821,6 +886,20 @@ print end_html;
 # The remainder includes utilty and other functions
 #
 
+#
+# Insert into validate table
+# call with email, key
+#
+# returns false on success, error string on failure.
+# 
+# 
+#
+sub insertValidate { 
+  eval { ExecSQL($dbuser,$dbpasswd,
+     "insert into rwb_validate (email,key,open) values (?,?,?)",undef,@_);};
+  return $@;
+}
+
 
 #
 # Give opinions
@@ -1031,7 +1110,7 @@ sub UserAdd {
 # Delete a user
 # returns false on success, $error string on failure
 # 
-sub UserDel { 
+sub UserDelete { 
   eval {ExecSQL($dbuser,$dbpasswd,"delete from rwb_users where name=?", undef, @_);};
   return $@;
 }
@@ -1048,6 +1127,24 @@ sub GiveUserPerm {
   eval { ExecSQL($dbuser,$dbpasswd,
 		 "insert into rwb_permissions (name,action) values (?,?)",undef,@_);};
   return $@;
+}
+
+#
+# Check a user a permission
+#
+# returns false on success, error string on failure.
+# 
+# GiveUserPerm($name,$perm)
+#
+sub CheckUserPerm { 
+  my ($name, $perm)=@_;
+  my @col;
+  eval {@col= ExecSQL($dbuser,$dbpasswd, "select count(*) from rwb_permissions where name=? and action=?","COL",$name, $perm);};
+  if ($@) { 
+    return 0;
+  } else {
+    return $col[0]>0;
+  }
 }
 
 #
@@ -1097,6 +1194,54 @@ sub UserCan {
   } else {
     return $col[0]>0;
   }
+}
+
+#
+#
+# Check to see if key is unused
+#
+# $ok = UserCan($user,$action)
+#
+sub ValidKey {
+  my ($key)=@_;
+  my @col;
+  eval {@col= ExecSQL($dbuser,$dbpasswd, "select count(*) from rwb_validate where key=?","COL",$key);};
+  if ($@) { 
+    return 0;
+  } else {
+    return $col[0]>0;
+  }
+}
+
+#
+#
+# Check to see if user can do some action
+#
+# $ok = UserCan($user,$action)
+#
+sub ValidLink {
+  my ($key)=@_;
+  my @col;
+  eval {@col= ExecSQL($dbuser,$dbpasswd, "select count(*) from rwb_validate where key=? and open=1","COL",$key);};
+  if ($@) { 
+    return 0;
+  } else {
+    return $col[0]>0;
+  }
+}
+
+#
+# Add a user
+# call with name,password,email
+#
+# returns false on success, error string on failure.
+# 
+# UserAdd($name,$password,$email)
+#
+sub OffLink { 
+  eval { ExecSQL($dbuser,$dbpasswd,
+     "update rwb_validate set open=0 where key=?",undef,$key);};
+  return $@;
 }
 
 

@@ -11,15 +11,11 @@ my $dbpasswd="z8VsyXhp8";
 
 print "Content-type: text/xml\n\n";
 
-
-
 my $dbh = DBI->connect("DBI:Oracle:", $dbuser, $dbpasswd);
 if (not $dbh) {
 	die "Can't connect to database because of " . $DBI::errstr;
 }
  
-
-
 my $sth = $dbh->prepare("select distinct cycle from cs339.candidate_master");
 $sth->execute or die "failure";
 

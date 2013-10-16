@@ -16,16 +16,18 @@
 -- that is, each student group's tables are a separate
 --
 --
-
-
 --one time use email tracking
 --
-
-
-
-
-
-
+create table rwb_validate (
+ email varchar(64) not null,
+ key int primary key,
+ open int not null
+);
+--
+--
+--
+--
+--
 --
 -- RWB users.  Self explanatory
 --

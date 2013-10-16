@@ -111,6 +111,8 @@ function ViewShift()
     }   
 
     console.log(formatString);
+    var cycleString = getCyclesQuery();
+    console.log(cycleString);
  
     // debug status flows through by cookie
     $.get("rwb.pl?act=near&latne="+ne.lat()+"&longne="+ne.lng()+"&latsw="+sw.lat()+"&longsw="+sw.lng()+"&format=raw" + formatString, NewData);
@@ -130,9 +132,38 @@ function displayCycles(data) {
     for(var i=0; i<years.length; i++){
 	currentYear = years[i].textContent;
         currentYearView = currentYear.substr(0, 2) + '-' + currentYear.substr(2);
-	html += "<input type='checkbox' class='selectYear' id='" + currentYear + "'>" + currentYearView + "</input>";
+	html += "<input type='checkbox' class='selectYear' val='" + currentYear + "'>" + currentYearView + "</input>";
     }
     $("#chooseYear").html(html); 
+}
+
+function getCyclesQuery() {
+    var checked = new Array();
+    $(".selectYear:checked").each(function() {
+	checked.push($(this).attr("val"));
+    });
+
+    var cycleString = "&cycle=";
+    for(var i=0; i<checked.length; i++){
+	cycleString += checked[i];
+	if (i != (checked.length-1)){
+	    cycleString += ",";
+	}
+    }
+/*
+    var cycleString = "(";
+    for (var i=0; i<checked.length; i++){
+	cycleString += "cycle=" + checked[i];
+	if (i != (checked.length-1)) {
+	   cycleString += " OR ";
+	} 
+    }
+    cycleString += ")";
+
+    if(cycleString == "()"){
+	cycleString = "";
+    }*/
+    return cycleString;
 }
 
 function Reposition(pos)
