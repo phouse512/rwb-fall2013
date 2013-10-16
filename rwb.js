@@ -118,11 +118,21 @@ function ViewShift()
 
 function getCycles()
 {
-  $.get("rwb.pl?act=getCycles", displayCycles);
+  $.get("get_cycles.pl", displayCycles);
 }
 
 function displayCycles(data) {
     console.log(data);
+
+    var years = data.getElementsByTagName("year");
+    var html = "";
+
+    for(var i=0; i<years.length; i++){
+	currentYear = years[i].textContent;
+        currentYearView = currentYear.substr(0, 2) + '-' + currentYear.substr(2);
+	html += "<input type='checkbox' class='selectYear' id='" + currentYear + "'>" + currentYearView + "</input>";
+    }
+    $("#chooseYear").html(html); 
 }
 
 function Reposition(pos)

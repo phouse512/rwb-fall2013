@@ -120,6 +120,7 @@ my $logincomplain=0;
 my $action;
 my $run;
 
+ 
 
 if (defined(param("act"))) { 
   $action=param("act");
@@ -339,12 +340,12 @@ if ($action eq "base") {
   #
   print "<div id=\"color\" style=\"width:100\%; height:10\%\"></div>";
   print "<div id=\"choose\" style=\"width:100\%; height:5\%\"><input type=\"checkbox\" id=\"committees\" class=\"what\" val=\"committees\" checked>Committes</input><input type=\"checkbox\" id=\"candidates\"  class=\"what\" val=\"candidates\">Candidates</input><input type=\"checkbox\" id=\"individuals\" class=\"what\" val=\"individuals\">Individuals</input></div>";
-
+  print "<div id=\"chooseYear\" style=\"width:100\%; height:10\%\"></div>";
   #
   #
   # And a map which will be populated later
   #
-  print "<div id=\"map\" style=\"width:100\%; height:70\%\"></div>";
+  print "<div id=\"map\" style=\"width:100\%; height:60\%\"></div>";
   
   
   #
@@ -492,8 +493,6 @@ if ($action eq "invite-user") {
     if (!$run) { 
       print start_form(-name=>'InviteUser'),
   h2('Invite User'),
-    "Name: ", textfield(-name=>'name'),
-      p,
         "Email: ", textfield(-name=>'email'),
     p,
       hidden(-name=>'run',-default=>['1']),
@@ -503,9 +502,12 @@ if ($action eq "invite-user") {
             hr;
     } else {
       my $name=param('name');
+
+      my $key="5";
+
       my $email=param('email');
       my $subject="Welcome to RWB!";
-      my $content="murphy.wot.eecs.northwestern.edu/~eli976/rwb/rwb.pl?act=validate&email=$email";
+      my $content="murphy.wot.eecs.northwestern.edu/~eli976/rwb/rwb.pl?act=validate&email=$email&ref=$user&key=$key";
       open(MAIL,"| mail -s $subject $email") or die "Can't send invite\n";
       print MAIL $content;
       close(MAIL);
@@ -530,20 +532,23 @@ if ($action eq "validate") {
         "Password: ", textfield(-name=>'password'),
     p,
       hidden(-name=>'run',-default=>['1']),
+      hidden(-name=>'email',-default=>['1']),
+       hidden(-name=>'key',-default=>['1']),
+        hidden(-name=>'ref',-default=>['1']),
+      
       hidden(-name=>'act',-default=>['validate']),
         submit,
           end_form,
             hr;
     } else {
 
-      my $q = new CGI;
-      my $a = $q->param('email');
-
+      my $invited_email = param('email');
+      my $key = param('key');
       my $name=param('name');
       my $password=param('password');
-      my $test="me";
+      my $referrer=param('ref');
       my $error;
-      $error=UserAdd($name,$password, $a ,$test);
+      $error=UserAdd($name,$password, $invited_email ,$referrer);
       if ($error) { 
   print "Can't add user because: $error";
       } else {

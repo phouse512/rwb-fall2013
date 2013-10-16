@@ -1,18 +1,36 @@
+#!/usr/bin/perl -w
+
+use strict;
+use CGI qw(:standard);
+
+use DBI;
+use Time::ParseDate;
+
 my $dbuser="eli976";
 my $dbpasswd="z8VsyXhp8";
 
-sub ExecSQL {
-	my ($user, $passwd, $querystring) =@_;
+print "Content-type: text/xml\n\n";
 
-	my $dbh = DBI->connect("DBI:Oracle:", $user, $passwd);
-	if (not $dbh) {
-		die "Can't connect to database because of " . $DBI::errstr;
-	}
 
-	my $sth = $dbh->prepare($querystring);
 
-	print("hello");
+my $dbh = DBI->connect("DBI:Oracle:", $dbuser, $dbpasswd);
+if (not $dbh) {
+	die "Can't connect to database because of " . $DBI::errstr;
 }
+ 
+
+
+my $sth = $dbh->prepare("select distinct cycle from cs339.candidate_master");
+$sth->execute or die "failure";
+
+print "<years>";
+
+while (my @row = $sth->fetchrow_array()) {
+	print  "<year>@row</year>";
+}
+
+print "</years>";
+$sth->finish();
 
 ######################################################################
 #
