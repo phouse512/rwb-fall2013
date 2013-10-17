@@ -343,7 +343,8 @@ if ($action eq "base") {
   #
   print "<div id=\"color\" style=\"width:100\%; height:10\%\"></div>";
   print "<div id=\"choose\" style=\"width:100\%; height:5\%\"><input type=\"checkbox\" id=\"committees\" class=\"what\" val=\"committees\" checked>Committes</input><input type=\"checkbox\" id=\"candidates\"  class=\"what\" val=\"candidates\">Candidates</input><input type=\"checkbox\" id=\"individuals\" class=\"what\" val=\"individuals\">Individuals</input></div>";
-  print "<div id=\"chooseYear\" style=\"width:100\%; height:10\%\"></div>";
+  print "<div style=\"width:100\"; height:4\%\"><h3>Election Cycles</h3></div>";
+  print "<div id=\"chooseYear\" style=\"width:100\%; height:5\%\"></div>";
   #
   #
   # And a map which will be populated later
@@ -423,6 +424,9 @@ if ($action eq "base") {
 # the client-side javascript will invoke it to get raw data for overlaying on the map
 #
 #
+
+use diagnostics;
+
 if ($action eq "near") {
   my $latne = param("latne");
   my $longne = param("longne");
@@ -436,13 +440,6 @@ if ($action eq "near") {
   $format = "table" if !defined($format);
   $cycle = "1112" if !defined($cycle);
 
-  if (!defined($cycle)) {
-    $cycle = "1112"; 
-  } else {
-    my @cycle_array = split(',', $cycle);
-
-  }
-
   if (!defined($whatparam) || $whatparam eq "all") { 
     %what = ( committees => 1, 
 	      candidates => 1,
@@ -454,6 +451,7 @@ if ($action eq "near") {
 	       
 
   if ($what{committees}) { 
+my $dems = dem_comm_money($latne, $longne, $latsw, $longsw, $cycle);
     my ($str,$error) = Committees($latne,$longne,$latsw,$longsw,$cycle,$format);
     if (!$error) {
       if ($format eq "table") { 
@@ -651,7 +649,8 @@ if ($action eq "give-opinion-data") {
     } else {
       my $color=param('color');
       my $error;
-      $error=GiveOpinions($user,$color,$color,$color);
+      my $long=param('long');
+      $error=GiveOpinions($user,$color,$long,$color);
 
       if ($error) { 
   print "Can't give opinion because: $error";
@@ -915,6 +914,68 @@ sub GiveOpinions {
   return $@;
 }
 
+
+sub dem_comm_money {
+
+  my($latne, $longne, $latsw, $longsw, $cycle) = @_;
+  my @rows;
+  eval {
+    @rows = ExecSQL($dbuser, $dbpasswd, "select sum(comm.transaction_amnt) from cs339.committee_master comm_mast, cs339.cmte_id_to_geo geo, cs339.comm_to_comm comm, cs339.comm_to_cand cand where comm_mast.cmte_id = geo.cmte_id and geo.cmte_id = comm.cmte_id and comm.cmte_id = cand.cmte_id and comm_mast.cycle in ($cycle) and geo.latitude<$latne and geo.latitude>$latsw and geo.longitude<$longne and geo.longitude>$longsw and comm_mast.cmte_pty_affiliation='DEM'",undef);
+  }; 
+return rows[0];
+
+}
+
+
+sub rep_comm_money {
+
+  my($latne, $longne, $latsw, $longsw, $cycle) = @_;
+  my @rows;
+  eval {
+    @rows = ExecSQL($dbuser, $dbpasswd, "select sum(comm.transaction_amnt) from cs339.committee_master comm_mast, cs339.cmte_id_to_geo geo, cs339.comm_to_comm comm, cs339.comm_to_cand cand where comm_mast.cmte_id = geo.cmte_id and geo.cmte_id = comm.cmte_id and comm.cmte_id = cand.cmte_id and comm_mast.cycle in ($cycle) and geo.latitude<$latne and geo.latitude>$latsw and geo.longitude<$longne and geo.longitude>$longsw and comm_mast.cmte_pty_affiliation='REP'",undef);
+  }; 
+return rows[0];
+
+}
+
+
+sub dem_ind_money {
+
+  my($latne, $longne, $latsw, $longsw, $cycle) = @_;
+  my @rows;
+  eval {
+    @rows = ExecSQL($dbuser, $dbpasswd, "select sum(comm.transaction_amnt) from cs339.individual ind, cs339.ind_id_to_geo geo, cs339.comm_to_comm comm, cs339.comm_to_cand cand where comm_mast.cmte_id = geo.cmte_id and geo.cmte_id = comm.cmte_id and comm.cmte_id = cand.cmte_id and comm_mast.cycle in ($cycle) and geo.latitude<$latne and geo.latitude>$latsw and geo.longitude<$longne and geo.longitude>$longsw and comm_mast.cmte_pty_affiliation='DEM'",undef);
+  }; 
+return rows[0];
+
+}
+
+
+sub opinion_money_avg {
+
+  my($latne, $longne, $latsw, $longsw, $cycle) = @_;
+  my @rows;
+  eval {
+    @rows = ExecSQL($dbuser, $dbpasswd, "select avg(color) from rwb_opinions where latitude<$latne and latitude>$latsw and longitude<$longne and longitude>$longsw",undef);
+  }; 
+return rows[0];
+
+}
+
+
+sub opinion_money_stddev{
+
+  my($latne, $longne, $latsw, $longsw, $cycle) = @_;
+  my @rows;
+  eval {
+    @rows = ExecSQL($dbuser, $dbpasswd, "select stddev(color) from rwb_opinions where latitude<$latne and latitude>$latsw and longitude<$longne and longitude>$longsw",undef);
+  }; 
+return rows[0];
+
+}
+
+
+
 #
 # Generate a table of nearby committees
 # ($table|$raw,$error) = Committees(latne,longne,latsw,longsw,cycle,format)
@@ -924,7 +985,7 @@ sub Committees {
   my ($latne,$longne,$latsw,$longsw,$cycle,$format) = @_;
   my @rows;
   eval { 
-    @rows = ExecSQL($dbuser, $dbpasswd, "select latitude, longitude, cmte_nm, cmte_pty_affiliation, cmte_st1, cmte_st2, cmte_city, cmte_st, cmte_zip from cs339.committee_master natural join cs339.cmte_id_to_geo where cycle=? and latitude>? and latitude<? and longitude>? and longitude<?",undef,$cycle,$latsw,$latne,$longsw,$longne);
+    @rows = ExecSQL($dbuser, $dbpasswd, "select latitude, longitude, cmte_nm, cmte_pty_affiliation, cmte_st1, cmte_st2, cmte_city, cmte_st, cmte_zip from cs339.committee_master natural join cs339.cmte_id_to_geo where cycle in ($cycle) and latitude>? and latitude<? and longitude>? and longitude<?",undef,$latsw,$latne,$longsw,$longne);
   };
   
   if ($@) { 
@@ -943,20 +1004,6 @@ sub Committees {
 #
 #
 #
-#sub GetCycles {
-#  my @rows;
- # eval {
-  #  @rows = ExecSQL($dbuser, $dbpassword, "select distinct cycle from css339.candidate_master");
- # };
-
-
-
- # return (MakeTable("cycle_list", "2D", ["cycle"], @rows), $@);
-
-#}
-
-
-#
 # Generate a table of nearby candidates
 # ($table|$raw,$error) = Committees(latne,longne,latsw,longsw,cycle,format)
 # $error false on success, error string on failure
@@ -965,7 +1012,7 @@ sub Candidates {
   my ($latne,$longne,$latsw,$longsw,$cycle,$format) = @_;
   my @rows;
   eval { 
-    @rows = ExecSQL($dbuser, $dbpasswd, "select latitude, longitude, cand_name, cand_pty_affiliation, cand_st1, cand_st2, cand_city, cand_st, cand_zip from cs339.candidate_master natural join cs339.cand_id_to_geo where cycle=? and latitude>? and latitude<? and longitude>? and longitude<?",undef,$cycle,$latsw,$latne,$longsw,$longne);
+    @rows = ExecSQL($dbuser, $dbpasswd, "select latitude, longitude, cand_name, cand_pty_affiliation, cand_st1, cand_st2, cand_city, cand_st, cand_zip from cs339.candidate_master natural join cs339.cand_id_to_geo where cycle in ($cycle) and latitude>? and latitude<? and longitude>? and longitude<?",undef,$latsw,$latne,$longsw,$longne);
   };
   
   if ($@) { 
@@ -994,7 +1041,7 @@ sub Individuals {
   my ($latne,$longne,$latsw,$longsw,$cycle,$format) = @_;
   my @rows;
   eval { 
-    @rows = ExecSQL($dbuser, $dbpasswd, "select latitude, longitude, name, city, state, zip_code, employer, transaction_amnt from cs339.individual natural join cs339.ind_to_geo where cycle=? and latitude>? and latitude<? and longitude>? and longitude<?",undef,$cycle,$latsw,$latne,$longsw,$longne);
+    @rows = ExecSQL($dbuser, $dbpasswd, "select latitude, longitude, name, city, state, zip_code, employer, transaction_amnt from cs339.individual natural join cs339.ind_to_geo where cycle in ($cycle) and latitude>? and latitude<? and longitude>? and longitude<?",undef,$latsw,$latne,$longsw,$longne);
   };
   
   if ($@) { 

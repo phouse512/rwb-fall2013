@@ -115,7 +115,7 @@ function ViewShift()
     console.log(cycleString);
  
     // debug status flows through by cookie
-    $.get("rwb.pl?act=near&latne="+ne.lat()+"&longne="+ne.lng()+"&latsw="+sw.lat()+"&longsw="+sw.lng()+"&format=raw" + formatString, NewData);
+    $.get("rwb.pl?act=near&latne="+ne.lat()+"&longne="+ne.lng()+"&latsw="+sw.lat()+"&longsw="+sw.lng()+"&format=raw" + formatString + cycleString, NewData);
 }
 
 function getCycles()
@@ -181,7 +181,8 @@ function Start(location)
   var lat = location.coords.latitude;
   var long = location.coords.longitude;
   var acc = location.coords.accuracy;
-  
+
+
   var mapc = $( "#map");
 
   map = new google.maps.Map(mapc[0], 
