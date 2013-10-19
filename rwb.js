@@ -54,23 +54,68 @@ function UpdateMap()
 
     if($("#committees").attr("checked")) {
 	UpdateMapById("committee_data","COMMITTEE");
+	var committeeDifference = $("input[name='diff_money_c']").attr("value");
+	var committeeTotal = $("input[name='total_c']").attr("value");
+	 $(".committeeResults").html("Spending total: $" + committeeTotal);
+	   
+
+	if (committeeDifference > 0){
+	   // $(".committeeResults").html("Spending difference: $" + committeeDifference);
+	    $(".committeeResults").css("background-color", "#A3C2FF");    
+	} else if (committeeDifference == 0){ 
+	   // $(".committeeResults").html("Neutral spending");
+	    $(".committeeResults").css("background-color", "#B7B7B7");
+	} else {
+	   // $(".committeeResults").html("Spending difference: $" + Math.abs(committeeDifference));
+	    $(".committeeResults").css("background-color", "#FF6666");
+	}
     }
     if($("#candidates").attr("checked")) {
 	 UpdateMapById("candidate_data","CANDIDATE");
     }
     if($("#individuals").attr("checked")) {    
 	UpdateMapById("individual_data", "INDIVIDUAL");
-   }    
-//UpdateMapById("opinion_data","OPINION");
 
+	var individualDifference = $("input[name='diff_money_i']").attr("value");
+	var individualTotal = $("input[name='total_i']").attr("value");
+	$(".individualResults").html("Spending total: $" + individualTotal);
+	 
+	if (individualDifference > 0){
+//	    $(".individualResults").html("Spending difference: $" + individualDifference);
+	    $(".individualResults").css("background-color", "#A3C2FF");
+	} else if (individualDifference == 0){
+//	    $(".individualResults").html("Neutral spending");
+	    $(".individualResults").css("background-color", "#B7B7B7");
+	} else {
+//	    $(".individualResults").html("Spending difference: $" + Math.abs(individualDifference));
+	    $(".individualResults").css("background-color", "#FF6666");
+	}
+    }  
+    if($("#opinions").attr("checked")) {
+	UpdateMapById("opinion_data","OPINION");
+        
+	var opinionAvg = $("input[name='oavg']").attr("value");
+	var opinionStd = parseFloat($("input[name='ostd']").attr("value")).toPrecision(5);
+
+	if(opinionAvg > 0){
+	    $(".opinionResults").css("background-color", "#A3C2FF");
+	} else if (opinionAvg == 0) {
+	    $(".opinionResults").css("background-color", "#B7B7B7");
+	} else {
+	    $(".opinionResults").css("background-color", "#FF6666");
+	}
+
+	console.log(opinionAvg + " " + opinionStd);
+	$(".opinionResults").html("Opinion Average: " + opinionAvg + " Std: " + opinionStd);
+    }
 
     color.innerHTML="Ready";
-    
-    if (Math.random()>0.5) { 
-	color.style.backgroundColor='blue';
-    } else {
-	color.style.backgroundColor='red';
-    }
+   
+    //if (Math.random()>0.5) { 
+    //	color.style.backgroundColor='blue';
+    //} else {
+    //	color.style.backgroundColor='red';
+    //}
 
 }
 
@@ -82,6 +127,27 @@ function NewData(data)
 
   UpdateMap();
 
+}
+
+function getLocation() {
+    if (navigator.geolocation){
+	 navigator.geolocation.getCurrentPosition(hiddenLocation)
+    }
+}
+
+function getDemocrat() {
+  $.get('comm_money.pl', displayCommitteeMoney);
+}
+
+function displayCommitteeMoney(data){
+  console.log(data);
+}
+
+function hiddenLocation(location){
+    var longitude = location.coords.longitude;
+    var latitude = location.coords.latitude;
+    console.log(longitude + " " + latitude);
+    $("p").first().prepend("<input type=\"hidden\" name=\"lat\" value=\"" + latitude + "\"><input type=\"hidden\" name=\"long\" value=\"" + longitude + "\">");
 }
 
 function ViewShift()
@@ -134,7 +200,8 @@ function displayCycles(data) {
         currentYearView = currentYear.substr(0, 2) + '-' + currentYear.substr(2);
 	html += "<input type='checkbox' class='selectYear' val='" + currentYear + "'>" + currentYearView + "</input>";
     }
-    $("#chooseYear").html(html); 
+    $("#chooseYear").html(html);
+    $(".selectYear[val='1112']").attr("checked", "checked"); 
 }
 
 function getCyclesQuery() {

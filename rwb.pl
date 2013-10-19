@@ -341,9 +341,10 @@ if ($action eq "base") {
   #
   # And something to color (Red, White, or Blue)
   #
-  print "<div id=\"color\" style=\"width:100\%; height:10\%\"></div>";
-  print "<div id=\"choose\" style=\"width:100\%; height:5\%\"><input type=\"checkbox\" id=\"committees\" class=\"what\" val=\"committees\" checked>Committes</input><input type=\"checkbox\" id=\"candidates\"  class=\"what\" val=\"candidates\">Candidates</input><input type=\"checkbox\" id=\"individuals\" class=\"what\" val=\"individuals\">Individuals</input></div>";
-  print "<div style=\"width:100\"; height:4\%\"><h3>Election Cycles</h3></div>";
+  print "<div id=\"color\" style=\"width:100\%; height:3\%\"></div>";
+  print "<div id=\"status\" style=\"width:100\%; height:7\%\"><div class=\"committeeResults\" style=\"float: left; width: 33\%;\">Committee Results:</div><div class=\"individualResults\" style=\"float: left; width: 33\%;\">Individual Results:</div><div class=\"opinionResults\" style=\"float: left; width: 33\%;\">Opinion Results:</div></div>";
+  print "<div id=\"choose\" style=\"width:100\%; height:5\%\"><input type=\"checkbox\" id=\"committees\" class=\"what\" val=\"committees\" checked>Committees</input><input type=\"checkbox\" id=\"candidates\"  class=\"what\" val=\"candidates\">Candidates</input><input type=\"checkbox\" id=\"individuals\" class=\"what\" val=\"individuals\">Individuals</input><input type=\"checkbox\" id=\"opinions\" class=\"what\" val=\"opinions\">Opinions</input></div>";
+  print "<div style=\"width:100\%\"; height:4\%\"><h3>Election Cycles</h3></div>";
   print "<div id=\"chooseYear\" style=\"width:100\%; height:5\%\"></div>";
   #
   #
@@ -443,7 +444,7 @@ if ($action eq "near") {
   if (!defined($whatparam) || $whatparam eq "all") { 
     %what = ( committees => 1, 
 	      candidates => 1,
-	      individuals =>1,
+	      individuals => 1,
 	      opinions => 1);
   } else {
     map {$what{$_}=1} split(/\s*,\s*/,$whatparam);
@@ -451,7 +452,26 @@ if ($action eq "near") {
 	       
 
   if ($what{committees}) { 
-my $dems = dem_comm_money($latne, $longne, $latsw, $longsw, $cycle);
+    my $i=0;
+    my $d_c;
+    my $r_c;
+    my $total_c;
+    my $diff_c;
+  #  while(defined $d_c){	
+  # while(!$d_c){
+    $d_c = dem_comm_money($latne+$i, $longne+$i, $latsw+$i, $longsw+$i, $cycle);
+    $r_c = rep_comm_money($latne+$i, $longne+$i, $latsw+$i, $longsw+$i, $cycle);
+
+    $total_c = $d_c+$r_c;
+    $diff_c = $d_c-$r_c;
+   # $i=$i+10;
+
+   # };
+
+    print "<input type='hidden' name='d_c' value='$d_c'>";
+    print "<input type='hidden' name='r_c' value='$r_c'>";
+    print "<input type='hidden' name='total_c' value='$total_c'>";
+    print "<input type='hidden' name='diff_money_c' value='$diff_c'>";
     my ($str,$error) = Committees($latne,$longne,$latsw,$longsw,$cycle,$format);
     if (!$error) {
       if ($format eq "table") { 
@@ -472,7 +492,19 @@ my $dems = dem_comm_money($latne, $longne, $latsw, $longsw, $cycle);
     }
   }
   if ($what{individuals}) {
-    my ($str,$error) = Individuals($latne,$longne,$latsw,$longsw,$cycle,$format);
+     my $d_i = dem_ind_money($latne, $longne, $latsw, $longsw, $cycle);
+     my $r_i = rep_ind_money($latne, $longne, $latsw, $longsw, $cycle);
+
+     my $total_i = $d_i+$r_i;
+     my $diff_i = $d_i-$r_i;
+     print "<input type='hidden' name='d_i' value='$d_i'>";
+     print "<input type='hidden' name='r_i' value='$r_i'>";
+    print "<input type='hidden' name='total_i' value='$total_i'>";
+
+     print "<input type='hidden' name='diff_money_i' value='$diff_i'>";
+#my $tester = tester($latne,$longne,$latsw,$longsw, $cycle);   
+
+ my ($str,$error) = Individuals($latne,$longne,$latsw,$longsw,$cycle,$format);
     if (!$error) {
       if ($format eq "table") { 
 	print "<h2>Nearby individuals</h2>$str";
@@ -482,6 +514,12 @@ my $dems = dem_comm_money($latne, $longne, $latsw, $longsw, $cycle);
     }
   }
   if ($what{opinions}) {
+
+    my $oavg = opinion_money_avg($latne, $longne, $latsw, $longsw, $cycle);
+    my $ostd = opinion_money_stddev($latne, $longne, $latsw, $longsw, $cycle);
+
+    print "<input type='hidden' name='oavg' value='$oavg'>";
+    print "<input type='hidden' name='ostd' value='$ostd'>";
     my ($str,$error) = Opinions($latne,$longne,$latsw,$longsw,$cycle,$format);
     if (!$error) {
       if ($format eq "table") { 
@@ -635,7 +673,10 @@ if ($action eq "give-opinion-data") {
   if (!UserCan($user,"give-opinion-data")) { 
     print h2('You do not have the required permissions to give opinions.');
   } else {
-    if (!$run) { 
+    if (!$run) {
+      print "<script src=\"http://ajax.googleapis.com/ajax/libs/jquery/1.4.2/jquery.min.js\" type=\"text/javascript\"></script>";
+      print "<script type=\"text/javascript\" src=\"rwb.js\"> </script>";
+      print "<script type=\"text/javascript\">\$(document).ready(function () {  getLocation(); });</script>"; 
       print start_form(-name=>'GiveOpinions'),
   h2('Give Opinions'),
     "Color (must be between -1 and 1): ", textfield(-name=>'color'),
@@ -650,7 +691,8 @@ if ($action eq "give-opinion-data") {
       my $color=param('color');
       my $error;
       my $long=param('long');
-      $error=GiveOpinions($user,$color,$long,$color);
+      my $lat=param('lat');
+      $error=GiveOpinions($user,$color,$lat,$long);
 
       if ($error) { 
   print "Can't give opinion because: $error";
@@ -917,67 +959,158 @@ sub GiveOpinions {
 
 sub dem_comm_money {
 
-  my($latne, $longne, $latsw, $longsw, $cycle) = @_;
-  my @rows;
-  eval {
-    @rows = ExecSQL($dbuser, $dbpasswd, "select sum(comm.transaction_amnt) from cs339.committee_master comm_mast, cs339.cmte_id_to_geo geo, cs339.comm_to_comm comm, cs339.comm_to_cand cand where comm_mast.cmte_id = geo.cmte_id and geo.cmte_id = comm.cmte_id and comm.cmte_id = cand.cmte_id and comm_mast.cycle in ($cycle) and geo.latitude<$latne and geo.latitude>$latsw and geo.longitude<$longne and geo.longitude>$longsw and comm_mast.cmte_pty_affiliation='DEM'",undef);
-  }; 
-return rows[0];
+   my($latne, $longne, $latsw, $longsw, $cycle) = @_;
 
+
+my $dbh = DBI->connect("DBI:Oracle:", $dbuser, $dbpasswd);
+if (not $dbh) {
+  die "Can't connect to database because of " . $DBI::errstr;
 }
 
+my $sth = $dbh->prepare("select sum(comm.transaction_amnt+cand.transaction_amnt) from cs339.committee_master comm_mast, cs339.cmte_id_to_geo geo, cs339.comm_to_comm comm, cs339.comm_to_cand cand where comm_mast.cmte_id = geo.cmte_id and geo.cmte_id = comm.cmte_id and comm.cmte_id = cand.cmte_id and comm_mast.cycle in ($cycle) and geo.latitude<$latne and geo.latitude>$latsw and geo.longitude<$longne and geo.longitude>$longsw and comm_mast.cmte_pty_affiliation ='DEM'");
+$sth->execute or die "failure";
+my $string;
+
+while (my @row = $sth->fetchrow_array()) {
+  $string = "@row";
+}
+
+$sth->finish();
+ return $string;
+}
 
 sub rep_comm_money {
 
-  my($latne, $longne, $latsw, $longsw, $cycle) = @_;
-  my @rows;
-  eval {
-    @rows = ExecSQL($dbuser, $dbpasswd, "select sum(comm.transaction_amnt) from cs339.committee_master comm_mast, cs339.cmte_id_to_geo geo, cs339.comm_to_comm comm, cs339.comm_to_cand cand where comm_mast.cmte_id = geo.cmte_id and geo.cmte_id = comm.cmte_id and comm.cmte_id = cand.cmte_id and comm_mast.cycle in ($cycle) and geo.latitude<$latne and geo.latitude>$latsw and geo.longitude<$longne and geo.longitude>$longsw and comm_mast.cmte_pty_affiliation='REP'",undef);
-  }; 
-return rows[0];
+   my($latne, $longne, $latsw, $longsw, $cycle) = @_;
 
+
+my $dbh = DBI->connect("DBI:Oracle:", $dbuser, $dbpasswd);
+if (not $dbh) {
+  die "Can't connect to database because of " . $DBI::errstr;
 }
+
+my $sth = $dbh->prepare("select sum(comm.transaction_amnt+cand.transaction_amnt) from cs339.committee_master comm_mast, cs339.cmte_id_to_geo geo, cs339.comm_to_comm comm, cs339.comm_to_cand cand where comm_mast.cmte_id = geo.cmte_id and geo.cmte_id = comm.cmte_id and comm.cmte_id = cand.cmte_id and comm_mast.cycle in ($cycle) and geo.latitude<$latne and geo.latitude>$latsw and geo.longitude<$longne and geo.longitude>$longsw and comm_mast.cmte_pty_affiliation='REP'");
+$sth->execute or die "failure";
+my $string;
+
+while (my @row = $sth->fetchrow_array()) {
+  $string = "@row";
+}
+
+$sth->finish();
+ return $string;
+}
+
+sub tester { 
+  my ($latne, $longne, $latsw, $longsw, $cycle)=@_;
+  my @col;
+  eval {@col= ExecSQL($dbuser,$dbpasswd, "select sum(ind.transaction_amnt) from cs339.individual ind, cs339.ind_to_geo geo, cs339.committee_master comm_mast where comm_mast.cmte_id = ind.cmte_id and geo.sub_id = ind.sub_id and comm_mast.cycle in ($cycle) and geo.latitude<$latne and geo.latitude>$latsw and geo.longitude<$longne and geo.longitude>$longsw and comm_mast.cmte_pty_affiliation='DEM'",undef);};
+  if ($@) { 
+    return 0;
+  } else {
+    return $col[0]>0;
+  }
+}
+
 
 
 sub dem_ind_money {
 
-  my($latne, $longne, $latsw, $longsw, $cycle) = @_;
-  my @rows;
-  eval {
-    @rows = ExecSQL($dbuser, $dbpasswd, "select sum(comm.transaction_amnt) from cs339.individual ind, cs339.ind_id_to_geo geo, cs339.comm_to_comm comm, cs339.comm_to_cand cand where comm_mast.cmte_id = geo.cmte_id and geo.cmte_id = comm.cmte_id and comm.cmte_id = cand.cmte_id and comm_mast.cycle in ($cycle) and geo.latitude<$latne and geo.latitude>$latsw and geo.longitude<$longne and geo.longitude>$longsw and comm_mast.cmte_pty_affiliation='DEM'",undef);
-  }; 
-return rows[0];
+   my($latne, $longne, $latsw, $longsw, $cycle) = @_;
 
+
+my $dbh = DBI->connect("DBI:Oracle:", $dbuser, $dbpasswd);
+if (not $dbh) {
+  die "Can't connect to database because of " . $DBI::errstr;
 }
+
+my $sth = $dbh->prepare("select sum(ind.transaction_amnt) from cs339.individual ind, cs339.ind_to_geo geo, cs339.committee_master comm_mast where comm_mast.cmte_id = ind.cmte_id and geo.sub_id = ind.sub_id and comm_mast.cycle in ($cycle) and geo.latitude<$latne and geo.latitude>$latsw and geo.longitude<$longne and geo.longitude>$longsw and comm_mast.cmte_pty_affiliation='DEM'");
+$sth->execute or die "failure";
+my $string;
+
+while (my @row = $sth->fetchrow_array()) {
+  $string = "@row";
+}
+
+$sth->finish();
+ return $string;
+}
+
+
+sub rep_ind_money {
+
+   my($latne, $longne, $latsw, $longsw, $cycle) = @_;
+
+
+my $dbh = DBI->connect("DBI:Oracle:", $dbuser, $dbpasswd);
+if (not $dbh) {
+  die "Can't connect to database because of " . $DBI::errstr;
+}
+
+my $sth = $dbh->prepare("select sum(ind.transaction_amnt) from cs339.individual ind, cs339.ind_to_geo geo, cs339.committee_master comm_mast where comm_mast.cmte_id = ind.cmte_id and geo.sub_id = ind.sub_id and comm_mast.cycle in ($cycle) and geo.latitude<$latne and geo.latitude>$latsw and geo.longitude<$longne and geo.longitude>$longsw and comm_mast.cmte_pty_affiliation='REP'");
+$sth->execute or die "failure";
+my $string;
+
+while (my @row = $sth->fetchrow_array()) {
+  $string = "@row";
+}
+
+$sth->finish();
+ return $string;
+}
+
+
 
 
 sub opinion_money_avg {
 
   my($latne, $longne, $latsw, $longsw, $cycle) = @_;
-  my @rows;
-  eval {
-    @rows = ExecSQL($dbuser, $dbpasswd, "select avg(color) from rwb_opinions where latitude<$latne and latitude>$latsw and longitude<$longne and longitude>$longsw",undef);
-  }; 
-return rows[0];
 
+
+my $dbh = DBI->connect("DBI:Oracle:", $dbuser, $dbpasswd);
+if (not $dbh) {
+  die "Can't connect to database because of " . $DBI::errstr;
 }
 
+my $sth = $dbh->prepare("select avg(color) from rwb_opinions where latitude<$latne and latitude>$latsw and longitude<$longne and longitude>$longsw");
+$sth->execute or die "failure";
+my $string;
 
-sub opinion_money_stddev{
+while (my @row = $sth->fetchrow_array()) {
+  $string = "@row";
+}
+
+$sth->finish();
+ return $string;
+}
+
+sub opinion_money_stddev {
 
   my($latne, $longne, $latsw, $longsw, $cycle) = @_;
-  my @rows;
-  eval {
-    @rows = ExecSQL($dbuser, $dbpasswd, "select stddev(color) from rwb_opinions where latitude<$latne and latitude>$latsw and longitude<$longne and longitude>$longsw",undef);
-  }; 
-return rows[0];
 
+
+my $dbh = DBI->connect("DBI:Oracle:", $dbuser, $dbpasswd);
+if (not $dbh) {
+  die "Can't connect to database because of " . $DBI::errstr;
 }
+
+my $sth = $dbh->prepare("select stddev(color) from rwb_opinions where latitude<$latne and latitude>$latsw and longitude<$longne and longitude>$longsw");
+$sth->execute or die "failure";
+my $string;
+
+while (my @row = $sth->fetchrow_array()) {
+  $string = "@row";
+}
+
+$sth->finish();
+ return $string;
+}
+
 
 
 
 #
-# Generate a table of nearby committees
+# Generate a table of  committees
 # ($table|$raw,$error) = Committees(latne,longne,latsw,longsw,cycle,format)
 # $error false on success, error string on failure
 #
